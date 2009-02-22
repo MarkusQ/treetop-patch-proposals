@@ -1,0 +1,247 @@
+diff -ubr -x '*~' treetop-from-github/lib/treetop/compiler/node_classes/anything_symbol.rb treetop-always-accept-modules/lib/treetop/compiler/node_classes/anything_symbol.rb
+--- treetop-from-github/lib/treetop/compiler/node_classes/anything_symbol.rb	2009-02-21 11:10:39.000000000 -0800
++++ treetop-always-accept-modules/lib/treetop/compiler/node_classes/anything_symbol.rb	2009-02-21 15:17:33.000000000 -0800
+@@ -4,7 +4,7 @@
+       def compile(address, builder, parent_expression = nil)
+         super
+         builder.if__ "index < input_length" do
+-          assign_result "(#{node_class_name}).new(input, index...(index + 1))"
++          assign_result "instantiate_node(#{node_class_name},input, index...(index + 1))"
+           extend_result_with_inline_module
+           builder << "@index += 1"
+         end
+diff -ubr -x '*~' treetop-from-github/lib/treetop/compiler/node_classes/character_class.rb treetop-always-accept-modules/lib/treetop/compiler/node_classes/character_class.rb
+--- treetop-from-github/lib/treetop/compiler/node_classes/character_class.rb	2009-02-21 11:10:39.000000000 -0800
++++ treetop-always-accept-modules/lib/treetop/compiler/node_classes/character_class.rb	2009-02-21 15:15:56.000000000 -0800
+@@ -5,7 +5,7 @@
+         super
+         
+         builder.if__ "input.index(Regexp.new(#{single_quote(text_value)}), index) == index" do
+-          assign_result "(#{node_class_name}).new(input, index...(index + 1))"
++          assign_result "instantiate_node(#{node_class_name},input, index...(index + 1))"
+           extend_result_with_inline_module
+           builder << "@index += 1"
+         end
+diff -ubr -x '*~' treetop-from-github/lib/treetop/compiler/node_classes/parsing_expression.rb treetop-always-accept-modules/lib/treetop/compiler/node_classes/parsing_expression.rb
+--- treetop-from-github/lib/treetop/compiler/node_classes/parsing_expression.rb	2009-02-21 11:10:39.000000000 -0800
++++ treetop-always-accept-modules/lib/treetop/compiler/node_classes/parsing_expression.rb	2009-02-21 15:18:55.000000000 -0800
+@@ -83,7 +83,7 @@
+       end
+       
+       def epsilon_node
+-        "SyntaxNode.new(input, index...index)"
++        "instantiate_node(SyntaxNode,input, index...index)"
+       end
+       
+       def assign_failure(start_index_var)
+diff -ubr -x '*~' treetop-from-github/lib/treetop/compiler/node_classes/repetition.rb treetop-always-accept-modules/lib/treetop/compiler/node_classes/repetition.rb
+--- treetop-from-github/lib/treetop/compiler/node_classes/repetition.rb	2009-02-21 11:10:39.000000000 -0800
++++ treetop-always-accept-modules/lib/treetop/compiler/node_classes/repetition.rb	2009-02-21 15:16:46.000000000 -0800
+@@ -24,7 +24,7 @@
+       end
+       
+       def assign_and_extend_result
+-        assign_result "#{node_class_name}.new(input, #{start_index_var}...index, #{accumulator_var})"
++        assign_result "instantiate_node(#{node_class_name},input, #{start_index_var}...index, #{accumulator_var})"
+         extend_result_with_inline_module
+       end
+     end
+diff -ubr -x '*~' treetop-from-github/lib/treetop/compiler/node_classes/sequence.rb treetop-always-accept-modules/lib/treetop/compiler/node_classes/sequence.rb
+--- treetop-from-github/lib/treetop/compiler/node_classes/sequence.rb	2009-02-21 11:10:39.000000000 -0800
++++ treetop-always-accept-modules/lib/treetop/compiler/node_classes/sequence.rb	2009-02-21 15:17:59.000000000 -0800
+@@ -7,7 +7,7 @@
+         use_vars :result, :start_index, :accumulator
+         compile_sequence_elements(sequence_elements)
+         builder.if__ "#{accumulator_var}.last" do
+-          assign_result "(#{node_class_name}).new(input, #{start_index_var}...index, #{accumulator_var})"
++          assign_result "instantiate_node(#{node_class_name},input, #{start_index_var}...index, #{accumulator_var})"
+           extend_result sequence_element_accessor_module_name if sequence_element_accessor_module_name
+           extend_result_with_inline_module
+         end
+diff -ubr -x '*~' treetop-from-github/lib/treetop/compiler/node_classes/terminal.rb treetop-always-accept-modules/lib/treetop/compiler/node_classes/terminal.rb
+--- treetop-from-github/lib/treetop/compiler/node_classes/terminal.rb	2009-02-21 11:10:39.000000000 -0800
++++ treetop-always-accept-modules/lib/treetop/compiler/node_classes/terminal.rb	2009-02-21 15:17:10.000000000 -0800
+@@ -6,7 +6,7 @@
+         string_length = eval(text_value).length
+         
+         builder.if__ "input.index(#{text_value}, index) == index" do
+-          assign_result "(#{node_class_name}).new(input, index...(index + #{string_length}))"
++          assign_result "instantiate_node(#{node_class_name},input, index...(index + #{string_length}))"
+           extend_result_with_inline_module
+           builder << "@index += #{string_length}"
+         end
+diff -ubr -x '*~' treetop-from-github/lib/treetop/runtime/compiled_parser.rb treetop-always-accept-modules/lib/treetop/runtime/compiled_parser.rb
+--- treetop-from-github/lib/treetop/runtime/compiled_parser.rb	2009-02-21 11:10:39.000000000 -0800
++++ treetop-always-accept-modules/lib/treetop/runtime/compiled_parser.rb	2009-02-21 15:15:23.000000000 -0800
+@@ -64,7 +64,7 @@
+       
+       def parse_anything(node_class = SyntaxNode, inline_module = nil)
+         if index < input.length
+-          result = node_class.new(input, index...(index + 1))
++          result = instantiate_node(node_class,input, index...(index + 1))
+           result.extend(inline_module) if inline_module
+           @index += 1
+           result
+@@ -73,6 +73,14 @@
+         end
+       end
+     
++      def instantiate_node(node_type,*args)
++        if node_type.respond_to? :new 
++          node_type.new(*args)
++        else
++          SyntaxNode.new(*args).extend(node_type)
++        end
++      end
++    
+       def terminal_parse_failure(expected_string)
+         return nil if index < max_terminal_failure_index
+         if index > max_terminal_failure_index
+diff -ubr -x '*~' treetop-from-github/spec/compiler/anything_symbol_spec.rb treetop-always-accept-modules/spec/compiler/anything_symbol_spec.rb
+--- treetop-from-github/spec/compiler/anything_symbol_spec.rb	2009-02-21 11:10:39.000000000 -0800
++++ treetop-always-accept-modules/spec/compiler/anything_symbol_spec.rb	2009-02-21 15:51:17.000000000 -0800
+@@ -22,4 +22,23 @@
+       parse('').should be_nil
+     end
+   end
++
++  module ModFoo
++  end
++
++  describe "an anything symbol followed by a module declaration and a block" do
++    testing_expression '. <AnythingSymbolSpec::ModFoo> { def a_method; end }'
++  
++    it "matches any single character in a big range, returning an instance of SyntaxNode extended by the declared module that responds to methods defined in the inline module" do
++      (33..127).each do |digit|
++        parse(digit.chr) do |result|
++          result.should_not be_nil
++          result.should be_an_instance_of(Treetop::Runtime::SyntaxNode)
++          result.should be_a_kind_of(ModFoo)
++          result.should respond_to(:a_method)
++          result.interval.should == (0...1)
++        end
++      end
++    end
++  end
+ end
+\ No newline at end of file
+diff -ubr -x '*~' treetop-from-github/spec/compiler/character_class_spec.rb treetop-always-accept-modules/spec/compiler/character_class_spec.rb
+--- treetop-from-github/spec/compiler/character_class_spec.rb	2009-02-21 11:10:39.000000000 -0800
++++ treetop-always-accept-modules/spec/compiler/character_class_spec.rb	2009-02-21 15:44:16.000000000 -0800
+@@ -34,6 +34,42 @@
+     end
+   end
+ 
++  module ModFoo
++  end
++
++  describe "a character class followed by a node module declaration and a block" do
++
++    testing_expression "[A-Z] <CharacterClassSpec::ModFoo> { def a_method; end }"
++
++    it "matches single characters within that range, returning instances of SyntaxNode extended by the specified module" do
++      result = parse('A')
++      result.should be_an_instance_of(Treetop::Runtime::SyntaxNode)
++      result.should be_a_kind_of(ModFoo)
++      result.should respond_to(:a_method)
++      result = parse('N')
++      result.should be_an_instance_of(Treetop::Runtime::SyntaxNode)
++      result.should be_a_kind_of(ModFoo)
++      result.should respond_to(:a_method)
++      result = parse('Z')
++      result.should be_an_instance_of(Treetop::Runtime::SyntaxNode)
++      result.should be_a_kind_of(ModFoo)
++      result.should respond_to(:a_method)
++    end
++
++    it "does not match single characters outside of that range" do
++      parse('8').should be_nil
++      parse('a').should be_nil
++    end
++
++    it "matches a single character within that range at index 1" do
++      parse(' A', :index => 1).should_not be_nil
++    end
++
++    it "fails to match a single character out of that range at index 1" do
++      parse(' 1', :index => 1).should be_nil
++    end
++  end
++
+   describe "A character class containing quotes" do
+     testing_expression "[\"']"
+ 
+diff -ubr -x '*~' treetop-from-github/spec/compiler/sequence_spec.rb treetop-always-accept-modules/spec/compiler/sequence_spec.rb
+--- treetop-from-github/spec/compiler/sequence_spec.rb	2009-02-21 11:10:39.000000000 -0800
++++ treetop-always-accept-modules/spec/compiler/sequence_spec.rb	2009-02-21 15:45:38.000000000 -0800
+@@ -39,6 +39,27 @@
+     end
+   end
+ 
++  module ModFoo
++  def mod_method; end
++  end
++
++  describe "a sequence of labeled terminal symbols followed by a node module declaration and a block" do
++    testing_expression 'foo:"foo" bar:"bar" baz:"baz" <SequenceSpec::ModFoo> { def a_method; end }'
++
++    it "upon successfully matching input, instantiates a syntax node and extends it with the declared module, element accessor methods, and the method from the inline module" do
++      parse('foobarbaz') do |result|
++        result.should_not be_nil
++        result.should respond_to(:mod_method)
++        result.should be_an_instance_of(Treetop::Runtime::SyntaxNode)
++        result.should be_a_kind_of(ModFoo)
++        result.should respond_to(:a_method)
++        result.foo.text_value.should == 'foo'
++        result.bar.text_value.should == 'bar'
++        result.baz.text_value.should == 'baz'
++      end
++    end
++  end
++
+   describe "a sequence of non-terminals" do
+     testing_grammar %{
+       grammar TestGrammar
+diff -ubr -x '*~' treetop-from-github/spec/compiler/terminal_spec.rb treetop-always-accept-modules/spec/compiler/terminal_spec.rb
+--- treetop-from-github/spec/compiler/terminal_spec.rb	2009-02-21 11:10:39.000000000 -0800
++++ treetop-always-accept-modules/spec/compiler/terminal_spec.rb	2009-02-21 15:49:13.000000000 -0800
+@@ -35,6 +35,39 @@
+     end
+   end
+ 
++  module ModFoo
++  end
++
++  describe "a terminal symbol followed by a node class declaration and a block" do
++    testing_expression "'foo' <TerminalSymbolSpec::ModFoo> { def a_method; end }"
++
++    it "correctly parses matching input prefixes at various indices, returning an instance of SyntaxNode extended with the declared module that can respond to methods defined in the inline module" do
++      parse "foo", :index => 0 do |result|
++        result.should be_an_instance_of(Treetop::Runtime::SyntaxNode)
++        result.should be_a_kind_of(ModFoo)
++        result.should respond_to(:a_method)
++        result.interval.should == (0...3)
++        result.text_value.should == 'foo'
++      end
++
++      parse "xfoo", :index => 1 do |result|
++        result.should be_an_instance_of(Treetop::Runtime::SyntaxNode)
++        result.should be_a_kind_of(ModFoo)
++        result.should respond_to(:a_method)
++        result.interval.should == (1...4)
++        result.text_value.should == 'foo'
++      end
++    
++      parse "---foo", :index => 3 do |result|
++        result.should be_an_instance_of(Treetop::Runtime::SyntaxNode)
++        result.should be_a_kind_of(ModFoo)
++        result.should respond_to(:a_method)
++        result.interval.should == (3...6)
++        result.text_value.should == 'foo'
++      end
++    end
++  end
++
+   describe "a transient terminal symbol" do
+     testing_expression "~'foo'"
+ 

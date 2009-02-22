@@ -1,0 +1,17 @@
+Proposed treetop patches
+------------------------
+
+Patch                                                      status
+------------------------------------------------------------------
+always accept modules                             under discussion
+    modifies treetop to always accept modules in
+    the <Foo> construct; without this patch, you
+    must be conscious of the structure of the 
+    rule and use either a class which descends 
+    from SyntaxNode or a module,  as appropriate.
+
+
+
+If you have a patch to propose or a comment to make about an existing 
+patch, or just follow the discussion about these patches see the treetop
+development list at http://groups.google.com/group/treetop-dev
